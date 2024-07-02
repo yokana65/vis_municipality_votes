@@ -5,7 +5,7 @@ use csv::ReaderBuilder;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-use crate::structs::votes::{Vote, VoteRecord};
+use crate::{harvester::muni_geo::fetch_geom, structs::votes::{Vote, VoteRecord}};
 
 pub async fn harvest_votes(client: &Client, url: &str) -> Result<Vote> {
     let body = client.get(url).send().await?.text().await?;
@@ -57,6 +57,8 @@ pub async fn harvest_votes(client: &Client, url: &str) -> Result<Vote> {
         return Err(anyhow!("CSV does not follow the assumed order of parties."));
     }
 
+    let geom_map = fetch_geom(&client).await?;
+
     for result in reader.records() {
         let record = result?;
 
@@ -74,7 +76,9 @@ pub async fn harvest_votes(client: &Client, url: &str) -> Result<Vote> {
             }
         }
 
-        let vote_record = VoteRecord { name_muni, votes };
+        let geometry = geom_map.get(&name_muni).map(|polygon| polygon.to_owned());
+
+        let vote_record = VoteRecord { name_muni, votes, geometry};
 
         vote_records.push(vote_record);
     }
