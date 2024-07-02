@@ -1,7 +1,8 @@
 use std::time::Duration;
+use std::collections::HashMap;
 
-use anyhow::Result;
-use csv::Reader;
+use anyhow::{Result, anyhow};
+use csv::ReaderBuilder;
 use scraper::{Html, Selector};
 use reqwest::Client;
 
@@ -25,19 +26,54 @@ async fn main() -> Result<()> {
         let csv_response = client.get(csv_url).send().await?;
         let csv_content = csv_response.text().await?;
 
-        let mut reader = Reader::from_reader(csv_content.as_bytes());
-        let mut votes = Vec::new();
+        let mut reader = ReaderBuilder::new()
+        .delimiter(b';')  
+        .has_headers(true)
+        .from_reader(csv_content.as_bytes());        
+    
+        let mut vote_records: Vec<VoteRecord> = Vec::new();
+
+        let party_positions = [17, 29, 41, 53, 65, 77, 89, 99];
+        let party_labels = ["Die Linke", "Grüne", "CDU", "AfD", "SPD", "FDP", "Die Partei", "BSW"];
+
+        let headers = reader.headers()?.clone();
+  
+        if headers[17] != *"E1" {
+            return Err(anyhow!("CSV does not follow the assumed order of parties."));
+        }
+
 
         for result in reader.records() {
             let record = result?;
-            println!("{:?}", record);
-            if record.len() >= 2 {
-                votes.push(Vote {
-                    name: record[0].to_string(),
-                    count: record[1].parse().unwrap_or(0),
-                });
+
+            let name_muni = record[4].to_string();
+            let mut votes: HashMap<String, i16> = HashMap::new();
+
+            for (&position, &label) in party_positions.iter().zip(party_labels.iter()) {
+                if let Ok(vote_count) = record[position].parse::<i16>() {
+                    votes.insert(label.to_string(), vote_count);
+                } else {
+                    return Err(anyhow!("Failed tp parse votes for municipality {}", name_muni));
+                }
             }
+
+            let vote_record = VoteRecord {
+                name_muni,
+                votes,
+            };
+
+            vote_records.push(vote_record);
         }
+
+
+        let vote = Vote {
+            name: "Leipzig Stadtratswahl 2024".to_string(),
+            vote_records,
+
+        };
+
+        println!("Vote: {:?}", vote);
+
     }
     Ok(())
 }
@@ -45,5 +81,21 @@ async fn main() -> Result<()> {
 #[derive(Debug)]
 pub struct Vote {
     pub name: String,
-    pub count: u32,
+    pub vote_records: Vec<VoteRecord>,
 }
+
+#[derive(Debug)]
+pub struct VoteRecord {
+    pub name_muni: String,
+    pub votes: HashMap<String, i16>,
+}
+
+// Parties in Leipzig are coded as follows:
+// Die Linke: E1
+// Grüne: E2
+// CDU: E3
+// AfD: E4
+// SPD: E5
+// FDP: E6
+// Die PARTEI: E7
+// BSW: E8
