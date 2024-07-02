@@ -6,6 +6,10 @@ use csv::ReaderBuilder;
 use scraper::{Html, Selector};
 use reqwest::Client;
 
+use structs::votes::{Vote, VoteRecord};
+
+mod structs;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let client = Client::builder().timeout(Duration::from_secs(300)).build()?;
@@ -76,18 +80,6 @@ async fn main() -> Result<()> {
 
     }
     Ok(())
-}
-
-#[derive(Debug)]
-pub struct Vote {
-    pub name: String,
-    pub vote_records: Vec<VoteRecord>,
-}
-
-#[derive(Debug)]
-pub struct VoteRecord {
-    pub name_muni: String,
-    pub votes: HashMap<String, i16>,
 }
 
 // Parties in Leipzig are coded as follows:
