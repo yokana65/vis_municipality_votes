@@ -22,13 +22,6 @@ pub struct VoteRecord {
 }
 
 impl Vote {
-    pub fn new() -> Self {
-        Vote {
-            name: String::new(),
-            vote_records: Vec::new(),
-        }
-    }
-
     pub fn write_geojson(&self) -> Result<()> {
         let filename = self.name.as_str();
 

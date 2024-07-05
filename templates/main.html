@@ -1,0 +1,24 @@
+<html lang = "de">
+    <head>
+        <meta name="description"
+         content="This is a visualizer for voting results"/>
+         <meta charset="UTF-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Vote results in Leipzig</title>
+    </head>
+    <body>
+        <h1>Vote Summary</h1>
+        <h2>{{ vote_name }}</h2>
+        {% for record in vote_records %}
+            <h3>Municipality: {{ record.name_muni }}</h3>
+            <ul>
+            {% for (party, count) in record.votes %}
+                <li>{{ party }}: {{ count }}</li>
+            {% endfor %}
+            </ul>
+            {% if record.has_geometry %}
+                <p>Contains a geometry</p>
+            {% endif %}
+        {% endfor %}
+    </body>
+</html>
