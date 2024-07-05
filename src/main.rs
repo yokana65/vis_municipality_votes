@@ -1,7 +1,8 @@
 use std::any::{type_name, type_name_of_val};
 use std::time::{Duration, Instant};
+use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use geo::Polygon;
 use reqwest::Client;
 
@@ -21,9 +22,17 @@ async fn main() -> Result<()> {
     let url_votes = "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/stadtratswahlen/stadtratswahl-2024";
     let name_votes = "Leipzig Stadtratswahl 2024";
 
-    let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
+    let data_dir = "data";
+    let path = PathBuf::from(data_dir).join(name_votes);
 
-    let _ = vote.write_geojson();
+    if !path.exists() {
+        std::fs::create_dir_all(data_dir)?;
+
+
+        let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
+
+        let _ = vote.write_geojson().context("Failed to write GeoJson.");
+    }
 
     // println!("Vote name: {}", vote.name);
     // for record in &vote.vote_records {
