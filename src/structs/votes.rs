@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{File, read_to_string};
 use std::io::Write;
+use std::path::Path;
 
-use anyhow::Result;
-use geo::Polygon;
-use geojson::{Feature, FeatureCollection, GeoJson, Geometry};
+use anyhow::{Result, Context};
+use geo::{Polygon, Coord, LineString};
+use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value as GeoJsonValue};
 use serde_json::Value as JsonValue;
 
 #[derive(Debug)]
@@ -21,6 +22,13 @@ pub struct VoteRecord {
 }
 
 impl Vote {
+    pub fn new() -> Self {
+        Vote {
+            name: String::new(),
+            vote_records: Vec::new(),
+        }
+    }
+
     pub fn write_geojson(&self) -> Result<()> {
         let filename = self.name.as_str();
 
@@ -76,8 +84,70 @@ impl Vote {
         let path = "./data/".to_string() + filename;
         dbg!(&path);
         let mut file = File::create(path)?;
-        file.write_all(geojson_string.as_bytes()).expect("Failed to write GeoJson");
+        file.write_all(geojson_string.as_bytes())
+            .expect("Failed to write GeoJson");
 
         Ok(())
+    }
+
+    pub fn from_geojson(filename: &str) -> Result<Self> {
+        // TODO: make this general available
+        let data_dir = "data";
+        let file_path = Path::new(data_dir).join(filename);
+
+        let geojson_str = read_to_string(&file_path)
+        .with_context(|| format!("Failed to read GeoJSON file: {}", file_path.display()))?;
+
+        let geojson: GeoJson = geojson_str.parse()
+            .with_context(|| format!("Failed to parse GeoJSON from file: {}", file_path.display()))?;
+
+        let mut vote_records = Vec::new();
+
+        if let GeoJson::FeatureCollection(collection) = geojson {
+            for feature in collection.features {
+                if let Some(record) = Self::parse_feature(feature) {
+                    vote_records.push(record);
+                }
+            }
+        }
+        
+        Ok(Vote { name: filename.to_string(), vote_records, })
+    }
+
+    fn parse_feature(feature: Feature) -> Option<VoteRecord> {
+        let properties = feature.properties?;
+        let name_muni = properties.get("name_muni")?.as_str()?;
+
+        let geom_json = feature.geometry.unwrap();
+
+        let polygon = match geom_json.value {
+            GeoJsonValue::Polygon(coords) => {
+                let exterior: Vec<Coord<f64>> = coords.get(0)?.iter()
+                    .map(|c| Coord { x: c[0], y: c[1] })
+                    .collect();
+                
+                let interiors: Vec<LineString<f64>> = coords.iter().skip(1)
+                    .map(|ring| ring.iter().map(|c| Coord { x: c[0], y: c[1] }).collect())
+                    .collect();
+
+                Some(Polygon::new(exterior.into(), interiors.into()))
+            },
+            _ => None,
+        };
+
+        let mut votes = HashMap::new();
+        for (key, value) in properties.iter() {
+            if key != "name_muni" {
+                if let Some(count) = value.as_i64() {
+                    votes.insert(key.clone(), count as i16);
+                }
+            }
+        }
+
+        Some(VoteRecord {
+            name_muni: name_muni.to_string(),
+            votes,
+            geometry: polygon,
+        })
     }
 }
