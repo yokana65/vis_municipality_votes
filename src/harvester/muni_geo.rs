@@ -1,7 +1,7 @@
-use anyhow::{anyhow,Result};
-use reqwest::Client;
+use anyhow::{anyhow, Result};
 use geo::Polygon;
-use geojson::{GeoJson, Value as GeoJsonValue, FeatureCollection};
+use geojson::GeoJson;
+use reqwest::Client;
 
 use std::collections::HashMap;
 
@@ -12,7 +12,6 @@ pub async fn fetch_geom(client: &Client) -> Result<HashMap<String, Polygon<f64>>
     let geojson = response.parse::<GeoJson>()?;
 
     let mut geometry_map: HashMap<String, Polygon<f64>> = HashMap::new();
-
 
     if let GeoJson::FeatureCollection(collection) = geojson {
         for feature in collection.features {
@@ -26,7 +25,8 @@ pub async fn fetch_geom(client: &Client) -> Result<HashMap<String, Polygon<f64>>
         }
         Ok(geometry_map)
     } else {
-        Err(anyhow!("Expected a FeatureCollection, but got something else"))
+        Err(anyhow!(
+            "Expected a FeatureCollection, but got something else"
+        ))
     }
-
 }
