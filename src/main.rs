@@ -19,8 +19,9 @@ async fn main() -> Result<()> {
         .build()?;
 
     let url_votes = "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/stadtratswahlen/stadtratswahl-2024";
+    let name_votes = "Leipzig Stadtratswahl 2024";
 
-    let vote = harvest_votes(&client, &url_votes).await?;
+    let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
 
     let _ = vote.write_geojson();
 

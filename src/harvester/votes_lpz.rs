@@ -10,7 +10,7 @@ use crate::{
     structs::votes::{Vote, VoteRecord},
 };
 
-pub async fn harvest_votes(client: &Client, url: &str) -> Result<Vote> {
+pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vote> {
     let body = client.get(url).send().await?.text().await?;
 
     let document = Html::parse_document(&body);
@@ -91,7 +91,7 @@ pub async fn harvest_votes(client: &Client, url: &str) -> Result<Vote> {
     }
 
     let vote = Vote {
-        name: "Leipzig Stadtratswahl 2024".to_string(),
+        name: name.to_string(),
         vote_records,
     };
 
