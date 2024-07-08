@@ -3,9 +3,12 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, Error, anyhow};
+use geo::algorithm::proj::Proj;
 use geo::{Coord, LineString, Polygon};
-use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value as GeoJsonValue};
+use geojson::{
+    Feature, FeatureCollection, GeoJson, Geometry as GeoJsonGeom, Value as GeoJsonValue,
+};
 use serde_json::Value as JsonValue;
 
 #[derive(Debug)]
@@ -43,7 +46,7 @@ impl Vote {
 
                 // Create geometry
                 let geometry = record.geometry.as_ref().map(|polygon| {
-                    Geometry::new(geojson::Value::Polygon(vec![polygon
+                    GeoJsonGeom::new(geojson::Value::Polygon(vec![polygon
                         .exterior()
                         .coords()
                         .map(|coord| vec![coord.x, coord.y])
@@ -84,7 +87,7 @@ impl Vote {
     }
 
     pub fn from_geojson(filename: &str) -> Result<Self> {
-        // TODO: make this general available
+        // TODO: make this generally available
         let data_dir = "data";
         let file_path = Path::new(data_dir).join(filename);
 
@@ -112,23 +115,37 @@ impl Vote {
     }
 
     fn parse_feature(feature: Feature) -> Option<VoteRecord> {
+        let from = "EPSG:32633";
+        let to = "EPSG:4326";
+
         let properties = feature.properties?;
         let name_muni = properties.get("name_muni")?.as_str()?;
 
         let geom_json = feature.geometry.unwrap();
 
+        // TODO: reproject to WGS84 coordinates
         let polygon = match geom_json.value {
             GeoJsonValue::Polygon(coords) => {
                 let exterior: Vec<Coord<f64>> = coords
                     .get(0)?
                     .iter()
-                    .map(|c| Coord { x: c[0], y: c[1] })
+                    .map(|c| {
+                        let coord = Coord { x: c[0], y: c[1] };
+                        reproject_coord_wgs84(coord, from, to).unwrap()
+                    })
                     .collect();
 
                 let interiors: Vec<LineString<f64>> = coords
                     .iter()
                     .skip(1)
-                    .map(|ring| ring.iter().map(|c| Coord { x: c[0], y: c[1] }).collect())
+                    .map(|ring| {
+                        ring.iter()
+                            .map(|c| {
+                                let coord = Coord { x: c[0], y: c[1] };
+                                reproject_coord_wgs84(coord, from, to).unwrap()
+                            })
+                            .collect()
+                    })
                     .collect();
 
                 Some(Polygon::new(exterior.into(), interiors.into()))
@@ -151,4 +168,75 @@ impl Vote {
             geometry: polygon,
         })
     }
+
+    pub fn convert_wgs84(&self) -> Result<Self> {
+        let from = "EPSG:32633";
+        let to = "EPSG:4326";
+
+        let converted_records: Vec<_> = self
+            .vote_records
+            .iter()
+            .map(|record| {
+                let converted_polygon = match &record.geometry {
+                    Some(polygon) => {
+                        // Convert exterior
+                        let converted_exterior: Result<LineString<f64>, Error> = polygon
+                            .exterior()
+                            .coords()
+                            .map(|coord| reproject_coord_wgs84(*coord, from, to))
+                            .collect::<Result<Vec<_>>>()
+                            .map(LineString::new);
+
+                        // Convert interiors
+                        let converted_interiors: Result<Vec<LineString<f64>>> = polygon
+                            .interiors()
+                            .iter()
+                            .map(|line| {
+                                line
+                                    .coords()
+                                    .map(|coord| reproject_coord_wgs84(*coord, from, to))
+                                    .collect::<Result<Vec<_>>>()
+                                    .map(LineString::new)
+                            })
+                            .collect();
+
+                        match (converted_exterior, converted_interiors) {
+                            (Ok(ext), Ok(int)) => Ok(Some(Polygon::new(ext, int))),
+                            _ => Err(anyhow!("Failed to convert coordinates")),
+                        }
+                    }
+                    None => Ok(None),
+                };
+                dbg!(&converted_polygon);
+
+                VoteRecord {
+                    name_muni: record.name_muni.clone(),
+                    votes: record.votes.clone(),
+                    geometry: converted_polygon.unwrap(),
+                }
+            })
+            .collect();
+        
+        Ok(Vote {
+            name: self.name.clone(),
+            vote_records: converted_records,
+        })
+    }
+}
+
+fn reproject_coord_wgs84(coord: Coord<f64>, from: &str, to: &str) -> Result<Coord<f64>> {
+
+    let ft_to_m = Proj::new_known_crs(&from, &to, None).unwrap();
+
+    let result = ft_to_m
+        .convert(Coord {
+            x: coord.x,
+            y: coord.y,
+        })
+        .unwrap();
+
+    Ok(Coord {
+        x: result.x,
+        y: result.y,
+    })
 }

@@ -1,6 +1,6 @@
+use actix_files as fs;
 use actix_service::Service;
 use actix_web::{App, HttpServer};
-use actix_files as fs;
 
 use app::views_factory;
 

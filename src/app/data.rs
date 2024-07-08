@@ -43,12 +43,13 @@ async fn get_data() -> Result<Vote> {
         std::fs::create_dir_all(data_dir)?;
 
         let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
+        let vote_wgs84 = vote.convert_wgs84().unwrap();
 
-        let _ = vote.write_geojson().context("Failed to write GeoJson.");
+        let _ = vote_wgs84.write_geojson().context("Failed to write GeoJson.");
     }
 
     let vote = Vote::from_geojson(&name_votes)?;
-
+    
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
 

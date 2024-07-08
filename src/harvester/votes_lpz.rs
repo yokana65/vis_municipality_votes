@@ -79,6 +79,7 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
             }
         }
 
+        // TODO: convert to WGS84
         let geometry = geom_map.get(&name_muni).map(|polygon| polygon.to_owned());
 
         let vote_record = VoteRecord {
@@ -89,7 +90,6 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
 
         vote_records.push(vote_record);
     }
-
     let vote = Vote {
         name: name.to_string(),
         vote_records,
