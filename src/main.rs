@@ -1,11 +1,11 @@
 use actix_service::Service;
 use actix_web::{App, HttpServer};
 
-use views::views_factory;
+use app::views_factory;
 
 mod harvester;
 mod structs;
-mod views;
+mod app;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
