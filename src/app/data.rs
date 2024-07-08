@@ -1,13 +1,14 @@
+use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use actix_web::HttpResponse;
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use reqwest::Client;
 
-use crate::structs::votes::Vote;
 use crate::harvester::votes_lpz::harvest_votes;
 use crate::structs::askama::render_html_summary;
+use crate::structs::votes::Vote;
 
 pub async fn data_items() -> HttpResponse {
     let vote = match get_data().await {
@@ -24,7 +25,6 @@ pub async fn data_items() -> HttpResponse {
         .content_type("text/html; charset=utf-8")
         .body(html_summary)
 }
-
 
 async fn get_data() -> Result<Vote> {
     let start = Instant::now();
@@ -45,7 +45,7 @@ async fn get_data() -> Result<Vote> {
         let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
 
         let _ = vote.write_geojson().context("Failed to write GeoJson.");
-    } 
+    }
 
     let vote = Vote::from_geojson(&name_votes)?;
 
@@ -53,4 +53,9 @@ async fn get_data() -> Result<Vote> {
     println!("Time elapsed: {:?}", duration);
 
     Ok(vote)
+}
+
+pub fn read_file(file_path: &str) -> String {
+    let data = fs::read_to_string(file_path).expect("Could not find html file for page rendering");
+    return data;
 }

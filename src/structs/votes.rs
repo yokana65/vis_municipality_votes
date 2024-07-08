@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::fs::{File, read_to_string};
+use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::Path;
 
-use anyhow::{Result, Context};
-use geo::{Polygon, Coord, LineString};
+use anyhow::{Context, Result};
+use geo::{Coord, LineString, Polygon};
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value as GeoJsonValue};
 use serde_json::Value as JsonValue;
 
@@ -89,10 +89,11 @@ impl Vote {
         let file_path = Path::new(data_dir).join(filename);
 
         let geojson_str = read_to_string(&file_path)
-        .with_context(|| format!("Failed to read GeoJSON file: {}", file_path.display()))?;
+            .with_context(|| format!("Failed to read GeoJSON file: {}", file_path.display()))?;
 
-        let geojson: GeoJson = geojson_str.parse()
-            .with_context(|| format!("Failed to parse GeoJSON from file: {}", file_path.display()))?;
+        let geojson: GeoJson = geojson_str.parse().with_context(|| {
+            format!("Failed to parse GeoJSON from file: {}", file_path.display())
+        })?;
 
         let mut vote_records = Vec::new();
 
@@ -103,8 +104,11 @@ impl Vote {
                 }
             }
         }
-        
-        Ok(Vote { name: filename.to_string(), vote_records, })
+
+        Ok(Vote {
+            name: filename.to_string(),
+            vote_records,
+        })
     }
 
     fn parse_feature(feature: Feature) -> Option<VoteRecord> {
@@ -115,16 +119,20 @@ impl Vote {
 
         let polygon = match geom_json.value {
             GeoJsonValue::Polygon(coords) => {
-                let exterior: Vec<Coord<f64>> = coords.get(0)?.iter()
+                let exterior: Vec<Coord<f64>> = coords
+                    .get(0)?
+                    .iter()
                     .map(|c| Coord { x: c[0], y: c[1] })
                     .collect();
-                
-                let interiors: Vec<LineString<f64>> = coords.iter().skip(1)
+
+                let interiors: Vec<LineString<f64>> = coords
+                    .iter()
+                    .skip(1)
                     .map(|ring| ring.iter().map(|c| Coord { x: c[0], y: c[1] }).collect())
                     .collect();
 
                 Some(Polygon::new(exterior.into(), interiors.into()))
-            },
+            }
             _ => None,
         };
 

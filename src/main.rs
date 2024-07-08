@@ -1,16 +1,15 @@
 use actix_service::Service;
 use actix_web::{App, HttpServer};
+use actix_files as fs;
 
 use app::views_factory;
 
+mod app;
 mod harvester;
 mod structs;
-mod app;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-
-
     // Let's start our Server
     HttpServer::new(|| {
         let app = App::new()
@@ -21,6 +20,7 @@ async fn main() -> std::io::Result<()> {
                     Ok(result)
                 }
             })
+            .service(fs::Files::new("/assets", "./assets").show_files_listing())
             .configure(views_factory);
         return app;
     })

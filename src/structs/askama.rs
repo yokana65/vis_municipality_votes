@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use askama::Template;
 use anyhow::Result;
+use askama::Template;
 
 use crate::structs::votes::Vote;
 
@@ -19,13 +19,15 @@ struct VoteRecordTemplate<'a> {
 }
 
 pub fn render_html_summary(vote: &Vote) -> Result<String> {
-    let vote_records: Vec<VoteRecordTemplate> = vote.vote_records.iter().map(|record| {
-        VoteRecordTemplate {
+    let vote_records: Vec<VoteRecordTemplate> = vote
+        .vote_records
+        .iter()
+        .map(|record| VoteRecordTemplate {
             name_muni: &record.name_muni,
             votes: &record.votes,
             has_geometry: record.geometry.is_some(),
-        }
-    }).collect();
+        })
+        .collect();
 
     let template = VoteSummaryTemplate {
         vote_name: &vote.name,
@@ -34,4 +36,3 @@ pub fn render_html_summary(vote: &Vote) -> Result<String> {
 
     Ok(template.render()?)
 }
-

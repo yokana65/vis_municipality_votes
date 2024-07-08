@@ -1,2 +1,2 @@
-pub mod votes;
 pub mod askama;
+pub mod votes;
