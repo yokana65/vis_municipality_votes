@@ -75,10 +75,12 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   
       layer.bringToFront();
+      info.update(layer.feature.properties);
     }
 
     function resetHighlight(e) {
-      geojson.resetStyle(e.target);
+      geoJsonLayer.resetStyle(e.target);
+      info.update();
     }
 
     function zoomToFeature(e) {
@@ -93,6 +95,41 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   
+    var info = L.control();
+
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+    };
+
+    // TODO: update with property fields
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>US Population Density</h4>' +  (props ?
+            '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
+            : 'Hover over a state');
+    };
+
+    info.addTo(map);
+
+    var legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 10, 20, 50, 100, 200, 500, 1000],
+        labels = [];
+
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+    };
+
+legend.addTo(map);
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
@@ -112,22 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // adds selection of party on topright
     const partySelect = new L.Control.PartySelect({ position: 'topright' }).addTo(map);
 
-    // var info = L.control();
-
-    // info.onAdd = function (map) {
-    //     this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-    //     this.update();
-    //     return this._div;
-    // };
-
-    // // method that we will use to update the control based on feature properties passed
-    // info.update = function (props) {
-    //     this._div.innerHTML = '<h4>US Population Density</h4>' +  (props ?
-    //         '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
-    //         : 'Hover over a state');
-    // };
-
-    // info.addTo(map);
 
     console.log('Starting fetch request');
     fetch('/assets/data/Leipzig.json')
@@ -146,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       try {
           geoJsonData = data;
+          console.log('Data is defined: ', geoJsonData);
           updateLayer("Grüne");
           console.log('Initial layer added');
        } catch (error) {
