@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let geoJsonLayer;
     let geoJsonData;
+    let currentParty = "Grüne"; 
     const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
     
     function updateLayer(party) {
@@ -45,14 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
           map.removeLayer(geoJsonLayer);
           console.log('Layer is removed');
       }
-
-      // function onEachFeature(feature, layer) {
-      //   layer.on({
-      //       mouseover: highlightFeature,
-      //       mouseout: resetHighlight,
-      //       click: zoomToFeature
-      //   });
-      // }
 
       geoJsonLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
@@ -103,10 +96,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return this._div;
     };
 
-    // TODO: update with property fields
+    // TODO: update with property fields: feature.properties[party]
     info.update = function (props) {
-        this._div.innerHTML = '<h4>US Population Density</h4>' +  (props ?
-            '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
+        this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
+            '<b>' + props.name_muni + '</b><br />' + props[currentParty] + ': ' + currentParty
             : 'Hover over a state');
     };
 
@@ -140,6 +133,7 @@ legend.addTo(map);
           option.textContent = party;
         });
         L.DomEvent.on(select, 'change', function() {
+          currentParty = this.value;
           updateLayer(this.value);
         });
         return select;
@@ -168,7 +162,7 @@ legend.addTo(map);
       try {
           geoJsonData = data;
           console.log('Data is defined: ', geoJsonData);
-          updateLayer("Grüne");
+          updateLayer(currentParty);
           console.log('Initial layer added');
        } catch (error) {
       console.error('Error creating or adding GeoJSON layer:', error);
