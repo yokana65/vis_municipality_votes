@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
       };
     }
 
-    let geojsonLayer;
+    let geoJsonLayer;
     let geoJsonData;
     const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
     
@@ -41,18 +41,58 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('No GeoJSON data available');
         return;
     }
-      if (geojsonLayer) {
-          map.removeLayer(geojsonLayer);
+      if (geoJsonLayer) {
+          map.removeLayer(geoJsonLayer);
           console.log('Layer is removed');
       }
-      geojsonLayer = L.geoJSON(geoJsonData, {
+
+      // function onEachFeature(feature, layer) {
+      //   layer.on({
+      //       mouseover: highlightFeature,
+      //       mouseout: resetHighlight,
+      //       click: zoomToFeature
+      //   });
+      // }
+
+      geoJsonLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
           return style(feature, party);
-        }
+        },
+        onEachFeature: onEachFeature
       }).addTo(map);
       console.log('Layer is loaded with party: ', party);
 
     }
+
+    function highlightFeature(e) {
+      var layer = e.target;
+  
+      layer.setStyle({
+          weight: 5,
+          color: '#666',
+          dashArray: '',
+          fillOpacity: 0.7
+      });
+  
+      layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+    }
+
+    function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: zoomToFeature
+      });
+    }
+  
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
@@ -72,6 +112,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // adds selection of party on topright
     const partySelect = new L.Control.PartySelect({ position: 'topright' }).addTo(map);
 
+    // var info = L.control();
+
+    // info.onAdd = function (map) {
+    //     this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+    //     this.update();
+    //     return this._div;
+    // };
+
+    // // method that we will use to update the control based on feature properties passed
+    // info.update = function (props) {
+    //     this._div.innerHTML = '<h4>US Population Density</h4>' +  (props ?
+    //         '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
+    //         : 'Hover over a state');
+    // };
+
+    // info.addTo(map);
+
     console.log('Starting fetch request');
     fetch('/assets/data/Leipzig.json')
     .then(response => {
@@ -88,14 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       try {
-        let geoJsonLayer = L.geoJSON(data, {
-            style: function(feature) {
-                return style(feature, "Grüne");
-            }
-          });
-          
-          geoJsonLayer.addTo(map);
-          console.log('Added GeoJSON layer to map');
           geoJsonData = data;
           updateLayer("Grüne");
           console.log('Initial layer added');
