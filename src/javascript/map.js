@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize the map
-    var map = L.map('map_lpz').setView([51.34, 12], 12);
+    var map = L.map('map_lpz').setView([51.34, 12.36], 12);
 
     // Add a tile layer (replace with your preferred tile layer)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

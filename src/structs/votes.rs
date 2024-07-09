@@ -115,15 +115,11 @@ impl Vote {
     }
 
     fn parse_feature(feature: Feature) -> Option<VoteRecord> {
-        let from = "EPSG:32633";
-        let to = "EPSG:4326";
-
         let properties = feature.properties?;
         let name_muni = properties.get("name_muni")?.as_str()?;
 
         let geom_json = feature.geometry.unwrap();
 
-        // TODO: reproject to WGS84 coordinates
         let polygon = match geom_json.value {
             GeoJsonValue::Polygon(coords) => {
                 let exterior: Vec<Coord<f64>> = coords
@@ -131,7 +127,7 @@ impl Vote {
                     .iter()
                     .map(|c| {
                         let coord = Coord { x: c[0], y: c[1] };
-                        reproject_coord_wgs84(coord, from, to).unwrap()
+                        coord
                     })
                     .collect();
 
@@ -142,7 +138,7 @@ impl Vote {
                         ring.iter()
                             .map(|c| {
                                 let coord = Coord { x: c[0], y: c[1] };
-                                reproject_coord_wgs84(coord, from, to).unwrap()
+                                coord
                             })
                             .collect()
                     })
