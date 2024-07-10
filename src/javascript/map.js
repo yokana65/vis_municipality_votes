@@ -8,16 +8,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // adds scale to map
     L.control.scale().addTo(map);
+
+    const colorScale = chroma.scale(['#FFEDA0', '#800026']).mode('lab');
+
     
     function getColor(d) {
-      return d > 30 ? '#800026' :
-      d > 25  ? '#BD0026' :
-      d > 20  ? '#E31A1C' :
-      d > 15  ? '#FC4E2A' :
-      d > 10   ? '#FD8D3C' :
-      d > 5   ? '#FEB24C' :
-      d > 2   ? '#FED976' :
-      '#FFEDA0';
+      // return d > 30 ? '#800026' :
+      // d > 25  ? '#BD0026' :
+      // d > 20  ? '#E31A1C' :
+      // d > 15  ? '#FC4E2A' :
+      // d > 10   ? '#FD8D3C' :
+      // d > 5   ? '#FEB24C' :
+      // d > 2   ? '#FED976' :
+      // '#FFEDA0';
+      return colorScale(d / 40).hex();
     }
     
     function style(feature, party) {
@@ -108,21 +112,37 @@ document.addEventListener('DOMContentLoaded', function() {
     var legend = L.control({position: 'bottomright'});
 
     legend.onAdd = function (map) {
+      var div = L.DomUtil.create('div', 'info legend'),
+          grades = [0, 5, 10, 15, 20, 25, 30, 40];
+          var height = 200;
+          var width = 40;
+   
+      // Create the color scale bar
+      var colorBar = '<div style="width:' + width + 'px; height:' + height + 'px; background: linear-gradient(to top, ' + 
+      colorScale(0).hex() + ', ' + colorScale(1).hex() + 
+      '); float:left; margin-right:10px;"></div>';
 
-    var div = L.DomUtil.create('div', 'info legend'),
-        grades = [0, 10, 20, 50, 100, 200, 500, 1000],
-        labels = [];
+      // Create labels
+      var labels = grades.map((grade, index) => {
+      var y = height - (index * height / (grades.length - 1));
+      return '<div style="position:absolute; left:' + (width + 12) + 'px; top:' + y + 'px;">' + grade + '%</div>';
+      }).join('');
 
-    for (var i = 0; i < grades.length; i++) {
-        div.innerHTML +=
-            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
-    }
+      div.innerHTML = '<div style="position:relative; height:' + height + 'px; padding-right: 40px;">' + colorBar + labels + '</div>';
 
-    return div;
+      // div.innerHTML +=
+      //         '<i style="background: linear-gradient(to right, ' + colorScale(0).hex() + ', ' +
+      //         colorScale(1).hex() + ')"></i> ';
+
+      // for (var i = 0; i < grades.length; i++) {
+      //   div.innerHTML +=
+      //       '<span style="float:left;">' + grades[i] + '</span>';
+      // }
+
+      return div;
     };
 
-legend.addTo(map);
+    legend.addTo(map);
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
