@@ -47,7 +47,8 @@ impl Vote {
 
                 // Add vote percentages to properties
                 for (party, count) in &record.vote_perc {
-                    if let Some(num) = Number::from_f64(*count) {
+                    let rounded = (count * 100.0).round() / 100.0;
+                    if let Some(num) = Number::from_f64(rounded) {
                         properties.insert(party.clone(), JsonValue::Number(num));
                     } else {
                         // Fallback in case the f64 can't be exactly represented as a JSON number

@@ -10,13 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
     L.control.scale().addTo(map);
     
     function getColor(d) {
-      return d > 5000 ? '#800026' :
-      d > 3000  ? '#BD0026' :
-      d > 2500  ? '#E31A1C' :
-      d > 2000  ? '#FC4E2A' :
-      d > 1500   ? '#FD8D3C' :
-      d > 1000   ? '#FEB24C' :
-      d > 500   ? '#FED976' :
+      return d > 30 ? '#800026' :
+      d > 25  ? '#BD0026' :
+      d > 20  ? '#E31A1C' :
+      d > 15  ? '#FC4E2A' :
+      d > 10   ? '#FD8D3C' :
+      d > 5   ? '#FEB24C' :
+      d > 2   ? '#FED976' :
       '#FFEDA0';
     }
     
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // TODO: update with property fields: feature.properties[party]
     info.update = function (props) {
         this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
-            '<b>' + props.name_muni + '</b><br />' + props[currentParty] + ': ' + currentParty
+            '<b>' + props.name_muni + '</b><br />' + 'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' 
             : 'Hover over a state');
     };
 

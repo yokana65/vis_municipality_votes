@@ -14,7 +14,7 @@ pub struct VoteSummaryTemplate<'a> {
 
 pub struct VoteRecordTemplate<'a> {
     name_muni: &'a str,
-    vote_perc: HashMap<String, f64>,
+    vote_perc: &'a HashMap<String, f64>,
     total_votes: &'a i32,
     has_geometry: bool,
 }
@@ -23,21 +23,13 @@ pub fn render_html_summary(vote: &Vote) -> Result<String> {
     let vote_records: Vec<VoteRecordTemplate> = vote
         .vote_records
         .iter()
-        .map(|record| {
-            let vote_perc_rd: HashMap<String, f64> = record.vote_perc
-            .iter()
-            .map(|(party, &percentage)| {
-                let rounded = (percentage * 100.0).round() / 100.0;
-                (party.clone(), rounded)
-            })
-            .collect();
+        .map(|record|
 
             VoteRecordTemplate {
                 name_muni: &record.name_muni,
-                vote_perc: vote_perc_rd,
+                vote_perc: &record.vote_perc,
                 total_votes: &record.total_votes,
                 has_geometry: record.geometry.is_some(),
-            }
         })
         .collect();
 
