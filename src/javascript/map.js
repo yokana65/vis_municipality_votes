@@ -133,6 +133,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function onEachFeature(feature, layer) {
+      if (feature.properties && feature.properties.name_muni) {
+        layer.bindTooltip(feature.properties.name_muni, {
+            permanent: true,
+            direction: 'center',
+            className: 'polygon-label'
+        });
+      }
+
       layer.on({
           mouseover: highlightFeature,
           mouseout: resetHighlight,
