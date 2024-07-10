@@ -10,27 +10,21 @@ document.addEventListener('DOMContentLoaded', function() {
     L.control.scale().addTo(map);
 
     const partyColorScales = {
-      "AfD": chroma.scale(['#FFEDA0', '#800026']),
-      "BSW": chroma.scale(['#E0F3F8', '#4575B4']),
-      "CDU": chroma.scale(['#FEE090', '#990000']),
-      "Die Linke": chroma.scale(['#FFFFCC', '#800026']),
-      "Die Partei": chroma.scale(['#F0F9E8', '#006837']),
-      "FDP": chroma.scale(['#FFF7FB', '#8C2D04']),
-      "Grüne": chroma.scale(['#F7FCF5', '#00441B']),
-      "SPD": chroma.scale(['#FFF5F0', '#67000D'])
+      // continuous color from left to right
+      "AfD": chroma.scale(['#D2B48C', '#4A2511']),
+      "BSW": chroma.scale(['#FFE4B5', '#FF8C00']),
+      "CDU": chroma.scale(['#D3D3D3', '#000000']),
+      "Die Linke": chroma.scale(['#FFC0CB', '#FF1493']),
+      "Die Partei": chroma.scale(['#FFCCCB', '#800020']),
+      "FDP": chroma.scale(['#FFFACD', '#FFD700']),
+      "Grüne": chroma.scale([ '#80ff00', '#009900']),
+      "SPD": chroma.scale(['#FF0000', '#FFCCCB'])
     };
     
     function getColor(d, party) {
-      // return d > 30 ? '#800026' :
-      // d > 25  ? '#BD0026' :
-      // d > 20  ? '#E31A1C' :
-      // d > 15  ? '#FC4E2A' :
-      // d > 10   ? '#FD8D3C' :
-      // d > 5   ? '#FEB24C' :
-      // d > 2   ? '#FED976' :
-      // '#FFEDA0';
       const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
-      return scale(d / 40).hex();
+      const topRangeParty = topRange[party] || 40;
+      return scale(d / topRangeParty).hex();
     }
     
     function style(feature, party) {
@@ -48,11 +42,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let geoJsonData;
     let legend;
     let currentParty = "Grüne"; 
+    let topRange = {};
     const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
     
     function updateLayer(party) {
       console.log('Update Layer function is called');
       let currentParty = party;
+      // const topRangeParty = topRange[party] || 40;
       if (!geoJsonData) {
         console.error('No GeoJSON data available');
         return;
@@ -64,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       geoJsonLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
-          return style(feature, party);
+          return style(feature, party, topRange);
         },
         onEachFeature: onEachFeature
       }).addTo(map);
@@ -82,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
       legend.onAdd = function (map) {
           var div = L.DomUtil.create('div', 'info legend');
           var grades = [0, 5, 10, 15, 20, 25, 30, 40];
+          // var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
           var height = 200;
           var width = 30;
   
@@ -100,6 +97,12 @@ document.addEventListener('DOMContentLoaded', function() {
           return div;
       };
       legend.addTo(map);
+    }
+
+    function calculateMaxValues(data) {
+      parties.forEach(party => {
+          topRange[party] = Math.max(...data.features.map(feature => feature.properties[party] || 0));
+      });
     }
 
     function highlightFeature(e) {
@@ -160,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         L.DomEvent.on(select, 'change', function() {
           currentParty = this.value;
-          updateLayer(this.value);
+          updateLayer(this.value, topRange);
         });
         return select;
       }
@@ -188,6 +191,8 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
           geoJsonData = data;
           console.log('Data is defined: ', geoJsonData);
+          let topRange = calculateMaxValues(data);
+          console.log('Maximal Percentage for each party: ', topRange);
           updateLayer(currentParty);
           console.log('Initial layer added');
        } catch (error) {
