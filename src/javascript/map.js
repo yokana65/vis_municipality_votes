@@ -9,10 +9,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // adds scale to map
     L.control.scale().addTo(map);
 
-    const colorScale = chroma.scale(['#FFEDA0', '#800026']).mode('lab');
-
+    const partyColorScales = {
+      "AfD": chroma.scale(['#FFEDA0', '#800026']),
+      "BSW": chroma.scale(['#E0F3F8', '#4575B4']),
+      "CDU": chroma.scale(['#FEE090', '#990000']),
+      "Die Linke": chroma.scale(['#FFFFCC', '#800026']),
+      "Die Partei": chroma.scale(['#F0F9E8', '#006837']),
+      "FDP": chroma.scale(['#FFF7FB', '#8C2D04']),
+      "Grüne": chroma.scale(['#F7FCF5', '#00441B']),
+      "SPD": chroma.scale(['#FFF5F0', '#67000D'])
+    };
     
-    function getColor(d) {
+    function getColor(d, party) {
       // return d > 30 ? '#800026' :
       // d > 25  ? '#BD0026' :
       // d > 20  ? '#E31A1C' :
@@ -21,12 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
       // d > 5   ? '#FEB24C' :
       // d > 2   ? '#FED976' :
       // '#FFEDA0';
-      return colorScale(d / 40).hex();
+      const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
+      return scale(d / 40).hex();
     }
     
     function style(feature, party) {
       return {
-        fillColor: getColor(feature.properties[party]),
+        fillColor: getColor(feature.properties[party], party),
         weight: 2,
         opacity: 1,
         color: 'white',
@@ -37,11 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let geoJsonLayer;
     let geoJsonData;
+    let legend;
     let currentParty = "Grüne"; 
     const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
     
     function updateLayer(party) {
       console.log('Update Layer function is called');
+      let currentParty = party;
       if (!geoJsonData) {
         console.error('No GeoJSON data available');
         return;
@@ -59,6 +70,36 @@ document.addEventListener('DOMContentLoaded', function() {
       }).addTo(map);
       console.log('Layer is loaded with party: ', party);
 
+      updateLegend(party);
+      console.log('Legend is updated');
+    }
+
+    function updateLegend(party) {
+      if (legend) {
+          map.removeControl(legend);
+      }
+      legend = L.control({position: 'bottomright'});
+      legend.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'info legend');
+          var grades = [0, 5, 10, 15, 20, 25, 30, 40];
+          var height = 200;
+          var width = 30;
+  
+          var colorBar = '<div style="width:' + width + 'px; height:' + height + 'px; background: linear-gradient(to top, ' + 
+                         partyColorScales[party](0).hex() + ', ' +
+                         partyColorScales[party](1).hex() + 
+                         '); float:left; margin-right:10px;"></div>';
+  
+          var labels = grades.map((grade, index) => {
+              var y = height - (index * height / (grades.length - 1)) - 9;
+              return '<div style="position:absolute; left:' + (width + 15) + 'px; top:' + y + 'px;">' + grade + '%</div>';
+          }).join('');
+  
+          div.innerHTML = '<div style="position:relative; height:' + height + 'px; padding-right: 40px;">' + colorBar + labels + '</div>';
+  
+          return div;
+      };
+      legend.addTo(map);
     }
 
     function highlightFeature(e) {
@@ -108,41 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     info.addTo(map);
-
-    var legend = L.control({position: 'bottomright'});
-
-    legend.onAdd = function (map) {
-      var div = L.DomUtil.create('div', 'info legend'),
-          grades = [0, 5, 10, 15, 20, 25, 30, 40];
-          var height = 200;
-          var width = 40;
-   
-      // Create the color scale bar
-      var colorBar = '<div style="width:' + width + 'px; height:' + height + 'px; background: linear-gradient(to top, ' + 
-      colorScale(0).hex() + ', ' + colorScale(1).hex() + 
-      '); float:left; margin-right:10px;"></div>';
-
-      // Create labels
-      var labels = grades.map((grade, index) => {
-      var y = height - (index * height / (grades.length - 1));
-      return '<div style="position:absolute; left:' + (width + 12) + 'px; top:' + y + 'px;">' + grade + '%</div>';
-      }).join('');
-
-      div.innerHTML = '<div style="position:relative; height:' + height + 'px; padding-right: 40px;">' + colorBar + labels + '</div>';
-
-      // div.innerHTML +=
-      //         '<i style="background: linear-gradient(to right, ' + colorScale(0).hex() + ', ' +
-      //         colorScale(1).hex() + ')"></i> ';
-
-      // for (var i = 0; i < grades.length; i++) {
-      //   div.innerHTML +=
-      //       '<span style="float:left;">' + grades[i] + '</span>';
-      // }
-
-      return div;
-    };
-
-    legend.addTo(map);
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
