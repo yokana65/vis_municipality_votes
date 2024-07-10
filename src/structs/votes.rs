@@ -3,13 +3,13 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::Path;
 
-use anyhow::{Context, Result, Error, anyhow};
+use anyhow::{anyhow, Context, Error, Result};
 use geo::algorithm::proj::Proj;
 use geo::{Coord, LineString, Polygon};
 use geojson::{
     Feature, FeatureCollection, GeoJson, Geometry as GeoJsonGeom, Value as GeoJsonValue,
 };
-use serde_json::Value as JsonValue;
+use serde_json::{Number, Value as JsonValue};
 
 #[derive(Debug)]
 pub struct Vote {
@@ -20,8 +20,10 @@ pub struct Vote {
 #[derive(Debug)]
 pub struct VoteRecord {
     pub name_muni: String,
-    pub votes: HashMap<String, i16>,
+    pub votes: HashMap<String, i32>,
     pub geometry: Option<Polygon<f64>>,
+    pub total_votes: i32,
+    pub vote_perc: HashMap<String, f64>,
 }
 
 impl Vote {
@@ -38,10 +40,28 @@ impl Vote {
                     "name_muni".to_string(),
                     JsonValue::String(record.name_muni.clone()),
                 );
+                properties.insert(
+                    "total_votes".to_string(),
+                    JsonValue::Number(record.total_votes.into()),
+                );
 
-                // Add vote counts to properties
+                // Add vote percentages to properties
+                for (party, count) in &record.vote_perc {
+                    if let Some(num) = Number::from_f64(*count) {
+                        properties.insert(party.clone(), JsonValue::Number(num));
+                    } else {
+                        // Fallback in case the f64 can't be exactly represented as a JSON number
+                        properties.insert(
+                            party.clone(),
+                            JsonValue::Number(Number::from_f64(count.round()).unwrap()),
+                        );
+                    }
+                }
+
+                // Add absolute vote counts to properties
                 for (party, count) in &record.votes {
-                    properties.insert(party.clone(), JsonValue::Number((*count).into()));
+                    let num = serde_json::Number::from(*count as i64);
+                    properties.insert(format!("{}_absolut", party), JsonValue::Number(num));
                 }
 
                 // Create geometry
@@ -78,7 +98,6 @@ impl Vote {
 
         // Write to a file
         let path = "./data/".to_string() + filename;
-        dbg!(&path);
         let mut file = File::create(path)?;
         file.write_all(geojson_string.as_bytes())
             .expect("Failed to write GeoJson");
@@ -151,18 +170,14 @@ impl Vote {
 
         let mut votes = HashMap::new();
         for (key, value) in properties.iter() {
-            if key != "name_muni" {
+            if key != "name_muni" && key != "total_votes" {
                 if let Some(count) = value.as_i64() {
-                    votes.insert(key.clone(), count as i16);
+                    votes.insert(key.clone(), count as i32);
                 }
             }
         }
 
-        Some(VoteRecord {
-            name_muni: name_muni.to_string(),
-            votes,
-            geometry: polygon,
-        })
+        Some(VoteRecord::new(name_muni.to_string(), votes, polygon))
     }
 
     pub fn convert_wgs84(&self) -> Result<Self> {
@@ -188,8 +203,7 @@ impl Vote {
                             .interiors()
                             .iter()
                             .map(|line| {
-                                line
-                                    .coords()
+                                line.coords()
                                     .map(|coord| reproject_coord_wgs84(*coord, from, to))
                                     .collect::<Result<Vec<_>>>()
                                     .map(LineString::new)
@@ -203,16 +217,15 @@ impl Vote {
                     }
                     None => Ok(None),
                 };
-                dbg!(&converted_polygon);
 
-                VoteRecord {
-                    name_muni: record.name_muni.clone(),
-                    votes: record.votes.clone(),
-                    geometry: converted_polygon.unwrap(),
-                }
+                VoteRecord::new(
+                    record.name_muni.clone(),
+                    record.votes.clone(),
+                    converted_polygon.unwrap(),
+                )
             })
             .collect();
-        
+
         Ok(Vote {
             name: self.name.clone(),
             vote_records: converted_records,
@@ -220,8 +233,36 @@ impl Vote {
     }
 }
 
-fn reproject_coord_wgs84(coord: Coord<f64>, from: &str, to: &str) -> Result<Coord<f64>> {
+impl VoteRecord {
+    pub fn new(
+        name_muni: String,
+        votes: HashMap<String, i32>,
+        geometry: Option<Polygon<f64>>,
+    ) -> Self {
+        let total_votes = votes.values().sum();
+        let vote_perc = Self::calc_perc(&votes, total_votes);
 
+        VoteRecord {
+            name_muni,
+            votes,
+            geometry,
+            total_votes,
+            vote_perc,
+        }
+    }
+
+    fn calc_perc(votes: &HashMap<String, i32>, total_votes: i32) -> HashMap<String, f64> {
+        votes
+            .iter()
+            .map(|(party, count)| {
+                let perc = (*count as f64 / total_votes as f64) * 100.0;
+                (party.clone(), perc)
+            })
+            .collect()
+    }
+}
+
+fn reproject_coord_wgs84(coord: Coord<f64>, from: &str, to: &str) -> Result<Coord<f64>> {
     let ft_to_m = Proj::new_known_crs(&from, &to, None).unwrap();
 
     let result = ft_to_m

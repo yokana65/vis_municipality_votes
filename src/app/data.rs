@@ -47,7 +47,9 @@ async fn get_data() -> Result<Vote> {
         let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
         let vote_wgs84 = vote.convert_wgs84().unwrap();
 
-        let _ = vote_wgs84.write_geojson().context("Failed to write GeoJson.");
+        let _ = vote_wgs84
+            .write_geojson()
+            .context("Failed to write GeoJson.");
     }
     println!("Read started.");
     let vote = Vote::from_geojson(&name_votes)?;

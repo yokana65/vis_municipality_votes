@@ -12,9 +12,10 @@
         <h2>{{ vote_name }}</h2>
         {% for record in vote_records %}
             <h3>Municipality: {{ record.name_muni }}</h3>
+            <p>Gesamtstimmen: {{ record.total_votes }}</p>
             <ul>
-            {% for (party, count) in record.votes %}
-                <li>{{ party }}: {{ count }}</li>
+            {% for (party, percentage) in record.vote_perc %}
+                <li>{{ party }}: {{ percentage }} Percent</li>
             {% endfor %}
             </ul>
             {% if record.has_geometry %}

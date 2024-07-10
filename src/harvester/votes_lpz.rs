@@ -64,12 +64,11 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
 
     for result in reader.records() {
         let record = result?;
-
         let name_muni = record[4].to_string();
-        let mut votes: HashMap<String, i16> = HashMap::new();
+        let mut votes = HashMap::new();
 
         for (&position, &label) in party_positions.iter().zip(party_labels.iter()) {
-            if let Ok(vote_count) = record[position].parse::<i16>() {
+            if let Ok(vote_count) = record[position].parse::<i32>() {
                 votes.insert(label.to_string(), vote_count);
             } else {
                 return Err(anyhow!(
@@ -79,15 +78,9 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
             }
         }
 
-        // TODO: convert to WGS84
         let geometry = geom_map.get(&name_muni).map(|polygon| polygon.to_owned());
 
-        let vote_record = VoteRecord {
-            name_muni,
-            votes,
-            geometry,
-        };
-
+        let vote_record = VoteRecord::new(name_muni, votes, geometry);
         vote_records.push(vote_record);
     }
     let vote = Vote {
