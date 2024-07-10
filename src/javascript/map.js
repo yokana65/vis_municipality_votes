@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getColor(d, party) {
       const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
       const topRangeParty = topRange[party] || 40;
+      console.log('Color Range is build with: ', topRangeParty);
       return scale(d / topRangeParty).hex();
     }
     
@@ -43,12 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let legend;
     let currentParty = "Grüne"; 
     let topRange = {};
+    let topRangeParty;
     const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
     
     function updateLayer(party) {
       console.log('Update Layer function is called');
       let currentParty = party;
-      // const topRangeParty = topRange[party] || 40;
+      let topRangeParty = topRange[party] || 40;
       if (!geoJsonData) {
         console.error('No GeoJSON data available');
         return;
@@ -60,25 +62,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
       geoJsonLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
+          // console.log('Style is build with: ', topRange);
           return style(feature, party, topRange);
         },
         onEachFeature: onEachFeature
       }).addTo(map);
       console.log('Layer is loaded with party: ', party);
 
-      updateLegend(party);
+      updateLegend(party, topRangeParty);
       console.log('Legend is updated');
     }
 
-    function updateLegend(party) {
+    function updateLegend(party, topRangeParty) {
+      console.log('Legend is build with: ', topRangeParty);
       if (legend) {
           map.removeControl(legend);
       }
       legend = L.control({position: 'bottomright'});
       legend.onAdd = function (map) {
           var div = L.DomUtil.create('div', 'info legend');
-          var grades = [0, 5, 10, 15, 20, 25, 30, 40];
-          // var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
+          // var grades = [0, 5, 10, 15, 20, 25, 30, 40];
+          var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
           var height = 200;
           var width = 30;
   
