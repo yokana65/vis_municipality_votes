@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var map = L.map('map_lpz').setView([51.34, 12.36], 12);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZom: 18,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -11,14 +11,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const partyColorScales = {
       // continuous color from left to right
-      "AfD": chroma.scale(['#D2B48C', '#4A2511']),
-      "BSW": chroma.scale(['#FFE4B5', '#FF8C00']),
-      "CDU": chroma.scale(['#D3D3D3', '#000000']),
-      "Die Linke": chroma.scale(['#FFC0CB', '#FF1493']),
-      "Die Partei": chroma.scale(['#FFCCCB', '#800020']),
-      "FDP": chroma.scale(['#FFFACD', '#FFD700']),
-      "Grüne": chroma.scale([ '#80ff00', '#009900']),
-      "SPD": chroma.scale(['#FF0000', '#FFCCCB'])
+      "AfD": chroma.scale(['#808080', '#4A2511']),
+      "BSW": chroma.scale(['#808080', '#ff944d']),
+      "CDU": chroma.scale(['#808080', '#000000']),
+      "Die Linke": chroma.scale(['#808080', '#ff0066']),
+      "Die Partei": chroma.scale(['#808080', '#660000']),
+      "FDP": chroma.scale(['#808080', '#FFD700']),
+      "Grüne": chroma.scale([ '#808080', '#009900']),
+      "SPD": chroma.scale(['#808080', '#ff0000'])
     };
     
     function getColor(d, party) {
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         opacity: 1,
         color: 'white',
         dashArray: '3',
-        fillOpacity: 0.7
+        fillOpacity: 0.8
       };
     }
 
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     info.update = function (props) {
         this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
             '<b>' + props.name_muni + '</b><br />' + 'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' 
-            : 'Hover over a state');
+            : 'Hover über einen Wahlbezirk');
     };
 
     info.addTo(map);
