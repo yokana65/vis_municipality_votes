@@ -1,6 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     var map = L.map('map_lpz').setView([51.34, 12.36], 12);
 
+    let geoJsonLayer;
+    let geoJsonData;
+    let legend;
+    let currentParty = "Gesamt"; 
+    let topRange = {};
+    let topRangeParty;
+    const parties = ["Gesamt", "Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
+
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZom: 18,
         attribution: '© OpenStreetMap contributors'
@@ -20,17 +28,41 @@ document.addEventListener('DOMContentLoaded', function() {
       "Grüne": chroma.scale([ '#808080', '#009900']),
       "SPD": chroma.scale(['#808080', '#ff0000'])
     };
-    
-    function getColor(d, party) {
-      const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
-      const topRangeParty = topRange[party] || 40;
-      console.log('Color Range is build with: ', topRangeParty);
-      return scale(d / topRangeParty).hex();
+
+    function getPartyColor(party) {
+      const colors = {
+          "AfD": "#4A2511",
+          "BSW": "#FF8C00",
+          "CDU": "#000000",
+          "Die Linke": "#FF1493",
+          "Die Partei": "#800020",
+          "FDP": "#FFD700",
+          "Grüne": "#006400",
+          "SPD": "#FF0000"
+      };
+      console.log('Build discrete color with ', party);
+      return colors[party] || '#FFFFFF';
+    }
+
+    function getColor(feature, party) {
+      if (party == "Gesamt") {
+        const partyVotesArray = Object.entries(feature.properties).filter(([key, value]) => parties.includes(key) && key !== "total_votes")
+        .map(([key, value]) => ({party: key, votes: value}));
+        const winningParty = partyVotesArray.reduce((max, current) => current.votes > max.votes ? current : max);
+        console.log('Overview is build with ', winningParty);
+        return getPartyColor(winningParty.party);
+      } else {
+        console.log('Party view is build');
+        const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
+        const topRangeParty = topRange[party] || 40;
+        console.log('Color Range is build with: ', topRangeParty);
+        return scale(feature.properties[party] / topRangeParty).hex();
+      }
     }
     
     function style(feature, party) {
       return {
-        fillColor: getColor(feature.properties[party], party),
+        fillColor: getColor(feature, party),
         weight: 2,
         opacity: 1,
         color: 'white',
@@ -38,15 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fillOpacity: 0.8
       };
     }
-
-    let geoJsonLayer;
-    let geoJsonData;
-    let legend;
-    let currentParty = "Grüne"; 
-    let topRange = {};
-    let topRangeParty;
-    const parties = ["Grüne", "AfD", "BSW", "CDU", "Die Linke", "Die Partei", "FDP", , "SPD"];
-    
+ 
     function updateLayer(party) {
       console.log('Update Layer function is called');
       let currentParty = party;
@@ -78,31 +102,61 @@ document.addEventListener('DOMContentLoaded', function() {
       if (legend) {
           map.removeControl(legend);
       }
+
       legend = L.control({position: 'bottomright'});
       legend.onAdd = function (map) {
           var div = L.DomUtil.create('div', 'info legend');
-          // var grades = [0, 5, 10, 15, 20, 25, 30, 40];
-          var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
-          var height = 200;
-          var width = 30;
-  
-          var colorBar = '<div style="width:' + width + 'px; height:' + height + 'px; background: linear-gradient(to top, ' + 
-                         partyColorScales[party](0).hex() + ', ' +
-                         partyColorScales[party](1).hex() + 
-                         '); float:left; margin-right:10px;"></div>';
-  
-          var labels = grades.map((grade, index) => {
-              var y = height - (index * height / (grades.length - 1)) - 9;
-              return '<div style="position:absolute; left:' + (width + 15) + 'px; top:' + y + 'px;">' + grade + '%</div>';
-          }).join('');
-  
-          div.innerHTML = '<div style="position:relative; height:' + height + 'px; padding-right: 40px;">' + colorBar + labels + '</div>';
-  
-          return div;
-      };
-      legend.addTo(map);
-    }
 
+      if (party== "Gesamt") {
+        console.log('Legend is build for Gesamt');
+        // div.innerHTML = parties.map(p => 
+        //   '<i style="background:' + getPartyColor(p) + '"></i> ' + p
+        // ).join('<br>');
+        div.innerHTML = '<div class="legend-columns">' +
+        parties.filter(p => p !== "Gesamt").map(p =>
+            '<div class="legend-item">' +
+            '<i style="background:' + getPartyColor(p) + '"></i>' +
+            '<span>' + p + '</span>' +
+            '</div>'
+        ).join('') +
+        '</div>';
+      } else {
+            // var grades = [0, 5, 10, 15, 20, 25, 30, 40];
+            var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
+            var height = 200;
+            var width = 30;
+    
+            var colorBar = '<div style="width:' + width + 'px; height:' + height + 'px; background: linear-gradient(to top, ' + 
+                           partyColorScales[party](0).hex() + ', ' +
+                           partyColorScales[party](1).hex() + 
+                           '); float:left; margin-right:10px;"></div>';
+                           
+                           var labels = grades.map((grade, index) => {
+                var y = height - (index * height / (grades.length - 1)) - 9;
+                return '<div style="position:absolute; left:' + (width + 15) + 'px; top:' + y + 'px;">' + grade + '%</div>';
+            }).join('');
+            
+            div.innerHTML = '<div style="position:relative; height:' + height + 'px; padding-right: 40px;">' + colorBar + labels + '</div>';
+          }
+          return div;
+        };
+        legend.addTo(map);
+      }
+    
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+    };
+
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
+            '<b>' + props.name_muni + '</b><br />' + 'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' 
+            : 'Hover über einen Wahlbezirk');
+    };
+
+    info.addTo(map);
+ 
     function calculateMaxValues(data) {
       parties.forEach(party => {
           topRange[party] = Math.max(...data.features.map(feature => feature.properties[party] || 0));
@@ -150,20 +204,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
     var info = L.control();
 
-    info.onAdd = function (map) {
-        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-        this.update();
-        return this._div;
-    };
-
-    // TODO: update with property fields: feature.properties[party]
-    info.update = function (props) {
-        this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
-            '<b>' + props.name_muni + '</b><br />' + 'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' 
-            : 'Hover über einen Wahlbezirk');
-    };
-
-    info.addTo(map);
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
