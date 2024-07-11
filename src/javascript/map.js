@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
           "Grüne": "#006400",
           "SPD": "#FF0000"
       };
-      console.log('Build discrete color with ', party);
       return colors[party] || '#FFFFFF';
     }
 
@@ -49,13 +48,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const partyVotesArray = Object.entries(feature.properties).filter(([key, value]) => parties.includes(key) && key !== "total_votes")
         .map(([key, value]) => ({party: key, votes: value}));
         const winningParty = partyVotesArray.reduce((max, current) => current.votes > max.votes ? current : max);
-        console.log('Overview is build with ', winningParty);
         return getPartyColor(winningParty.party);
       } else {
-        console.log('Party view is build');
         const scale = partyColorScales[party] || chroma.scale(['#FFEDA0', '#800026']);
         const topRangeParty = topRange[party] || 40;
-        console.log('Color Range is build with: ', topRangeParty);
         return scale(feature.properties[party] / topRangeParty).hex();
       }
     }
@@ -109,9 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (party== "Gesamt") {
         console.log('Legend is build for Gesamt');
-        // div.innerHTML = parties.map(p => 
-        //   '<i style="background:' + getPartyColor(p) + '"></i> ' + p
-        // ).join('<br>');
         div.innerHTML = '<div class="legend-columns">' +
         parties.filter(p => p !== "Gesamt").map(p =>
             '<div class="legend-item">' +
@@ -121,7 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ).join('') +
         '</div>';
       } else {
-            // var grades = [0, 5, 10, 15, 20, 25, 30, 40];
             var grades = Array.from({length: 9}, (_, i) => (topRangeParty * i / 8).toFixed(1));
             var height = 200;
             var width = 30;
@@ -143,6 +135,8 @@ document.addEventListener('DOMContentLoaded', function() {
         legend.addTo(map);
       }
     
+    var info = L.control();
+
     info.onAdd = function (map) {
         this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
         this.update();
@@ -151,7 +145,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     info.update = function (props) {
         this._div.innerHTML = '<h4>Leipzig Stadtratswahl 2024</h4>' +  (props ?
-            '<b>' + props.name_muni + '</b><br />' + 'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' 
+            '<b>' + props.name_muni + '</b><br />' + 
+            (currentParty === "Gesamt" ? 
+              Object.entries(props)
+                  .filter(([key, value]) => parties.includes(key) && key !== "Gesamt")
+                  .sort((a, b) => b[1] - a[1])  // Sort by vote count, descending
+                  .map(([party, percentage]) => 
+                      party + ': ' + percentage + '%'
+                  )
+                  .join('<br />') :
+              'Ergebnis: ' + currentParty + ' mit ' + props[currentParty] + '%' )
             : 'Hover über einen Wahlbezirk');
     };
 
@@ -201,9 +204,6 @@ document.addEventListener('DOMContentLoaded', function() {
           click: zoomToFeature
       });
     }
-  
-    var info = L.control();
-
 
     L.Control.PartySelect = L.Control.extend({
       onAdd: function(map) {
