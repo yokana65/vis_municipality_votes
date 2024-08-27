@@ -143,28 +143,18 @@ impl Vote {
         let polygon = match geom_json.value {
             GeoJsonValue::Polygon(coords) => {
                 let exterior: Vec<Coord<f64>> = coords
-                    .get(0)?
+                    .first()?
                     .iter()
-                    .map(|c| {
-                        let coord = Coord { x: c[0], y: c[1] };
-                        coord
-                    })
+                    .map(|c| Coord { x: c[0], y: c[1] })
                     .collect();
 
                 let interiors: Vec<LineString<f64>> = coords
                     .iter()
                     .skip(1)
-                    .map(|ring| {
-                        ring.iter()
-                            .map(|c| {
-                                let coord = Coord { x: c[0], y: c[1] };
-                                coord
-                            })
-                            .collect()
-                    })
+                    .map(|ring| ring.iter().map(|c| Coord { x: c[0], y: c[1] }).collect())
                     .collect();
 
-                Some(Polygon::new(exterior.into(), interiors.into()))
+                Some(Polygon::new(exterior.into(), interiors))
             }
             _ => None,
         };
@@ -264,7 +254,7 @@ impl VoteRecord {
 }
 
 fn reproject_coord_wgs84(coord: Coord<f64>, from: &str, to: &str) -> Result<Coord<f64>> {
-    let ft_to_m = Proj::new_known_crs(&from, &to, None).unwrap();
+    let ft_to_m = Proj::new_known_crs(from, to, None).unwrap();
 
     let result = ft_to_m
         .convert(Coord {

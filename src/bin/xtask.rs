@@ -1,5 +1,4 @@
 use std::env::args;
-use std::fs::remove_dir_all;
 use std::process::Command;
 
 use anyhow::{anyhow, ensure, Result};

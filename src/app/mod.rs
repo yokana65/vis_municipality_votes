@@ -3,7 +3,7 @@ use actix_web::{web, HttpResponse};
 
 use crate::app::data::{data_items, read_file};
 
-mod data;
+pub mod data;
 
 pub fn views_factory(app: &mut ServiceConfig) {
     app_views_factory(app);

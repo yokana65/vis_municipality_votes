@@ -27,7 +27,7 @@ pub async fn data_items() -> HttpResponse {
         .body(html_summary)
 }
 
-async fn get_data() -> Result<Vote> {
+pub async fn get_data() -> Result<Vote> {
     let start = Instant::now();
     println!("Instant started.");
 
@@ -44,7 +44,7 @@ async fn get_data() -> Result<Vote> {
     if !path.exists() {
         std::fs::create_dir_all(data_dir)?;
         println!("Data harvest starts.");
-        let vote = harvest_votes(&client, &url_votes, &name_votes).await?;
+        let vote = harvest_votes(&client, url_votes, name_votes).await?;
         let vote_wgs84 = vote.convert_wgs84().unwrap();
 
         let _ = vote_wgs84
@@ -52,7 +52,7 @@ async fn get_data() -> Result<Vote> {
             .context("Failed to write GeoJson.");
     }
     println!("Read started.");
-    let vote = Vote::from_geojson(&name_votes)?;
+    let vote = Vote::from_geojson(name_votes)?;
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
 
@@ -60,6 +60,5 @@ async fn get_data() -> Result<Vote> {
 }
 
 pub fn read_file(file_path: &str) -> String {
-    let data = fs::read_to_string(file_path).expect("Could not find html file for page rendering");
-    return data;
+    fs::read_to_string(file_path).expect("Could not find html file for page rendering")
 }

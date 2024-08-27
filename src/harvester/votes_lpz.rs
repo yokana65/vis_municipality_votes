@@ -60,7 +60,7 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
         return Err(anyhow!("CSV does not follow the assumed order of parties."));
     }
 
-    let geom_map = fetch_geom(&client).await?;
+    let geom_map = fetch_geom(client).await?;
 
     for result in reader.records() {
         let record = result?;
