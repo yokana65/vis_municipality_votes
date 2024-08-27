@@ -23,13 +23,11 @@ pub fn render_html_summary(vote: &Vote) -> Result<String> {
     let vote_records: Vec<VoteRecordTemplate> = vote
         .vote_records
         .iter()
-        .map(|record|
-
-            VoteRecordTemplate {
-                name_muni: &record.name_muni,
-                vote_perc: &record.vote_perc,
-                total_votes: &record.total_votes,
-                has_geometry: record.geometry.is_some(),
+        .map(|record| VoteRecordTemplate {
+            name_muni: &record.name_muni,
+            vote_perc: &record.vote_perc,
+            total_votes: &record.total_votes,
+            has_geometry: record.geometry.is_some(),
         })
         .collect();
 

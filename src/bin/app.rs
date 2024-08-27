@@ -2,11 +2,11 @@ use actix_files as fs;
 use actix_service::Service;
 use actix_web::{App, HttpServer};
 
-use app::views_factory;
+use vis_municipality_votes::app::views_factory;
 
-mod app;
-mod harvester;
-mod structs;
+// mod app;
+// mod harvester;
+// mod structs;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
