@@ -2,15 +2,13 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
+use geo::Polygon;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-use crate::{
-    harvester::muni_geo::fetch_geom,
-    structs::votes::{Vote, VoteRecord},
-};
+use crate::structs::votes::{Vote, VoteRecord};
 
-pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vote> {
+pub async fn harvest_votes(client: &Client, url: &str, name: &str, geom_map: &HashMap<String, Polygon>) -> Result<Vote> {
     let body = client.get(url).send().await?.text().await?;
 
     let document = Html::parse_document(&body);
@@ -60,7 +58,7 @@ pub async fn harvest_votes(client: &Client, url: &str, name: &str) -> Result<Vot
         return Err(anyhow!("CSV does not follow the assumed order of parties."));
     }
 
-    let geom_map = fetch_geom(client).await?;
+    // let geom_map = fetch_geom(client).await?;
 
     for result in reader.records() {
         let record = result?;

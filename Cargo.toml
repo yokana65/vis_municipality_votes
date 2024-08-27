@@ -1,5 +1,9 @@
 [package]
 name = "vis_municipality_votes"
+authors = ["Johannes Wagner <wagnerjoha.leipzig@gmail.com>"]
+repository = "https://github.com/yokana65/vus_municipality_votes"
+license = "AGPL-3.0"
+publish = false
 version = "0.1.0"
 edition = "2021"
 

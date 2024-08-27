@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -9,15 +10,16 @@ use reqwest::Client;
 use crate::harvester::votes_lpz::harvest_votes;
 use crate::structs::askama::render_html_summary;
 use crate::structs::votes::Vote;
+use crate::harvester::muni_geo::fetch_geom;
 
 pub async fn data_items() -> HttpResponse {
     println!("Data Items function started.");
-    let vote = match get_data().await {
-        Ok(vote) => vote,
+    let votes = match get_data().await {
+        Ok(votes) => votes,
         Err(_) => return HttpResponse::InternalServerError().body("Failed to get data"),
     };
 
-    let html_summary = match render_html_summary(&vote) {
+    let html_summary = match render_html_summary(&votes[0]) {
         Ok(result) => result,
         Err(_) => return HttpResponse::InternalServerError().body("Failed to render Html"),
     };
@@ -27,7 +29,7 @@ pub async fn data_items() -> HttpResponse {
         .body(html_summary)
 }
 
-pub async fn get_data() -> Result<Vote> {
+pub async fn get_data() -> Result<Vec<Vote>> {
     let start = Instant::now();
     println!("Instant started.");
 
@@ -35,28 +37,42 @@ pub async fn get_data() -> Result<Vote> {
         .timeout(Duration::from_secs(300))
         .build()?;
 
-    let url_votes = "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/stadtratswahlen/stadtratswahl-2024";
-    let name_votes = "Leipzig Stadtratswahl 2024";
+    let mut vote_sources = HashMap::new();
+    vote_sources.insert(
+            "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/stadtratswahlen/stadtratswahl-2024",
+            "Leipzig_Stadtratswahl_2024"
+        );
+    vote_sources.insert(
+            "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/europawahlen/europawahl-2024",
+            "Leipzig_Europawahl_2024"
+        );
 
-    let data_dir = "data";
-    let path = PathBuf::from(data_dir).join(name_votes);
-    println!("Path started.");
-    if !path.exists() {
-        std::fs::create_dir_all(data_dir)?;
-        println!("Data harvest starts.");
-        let vote = harvest_votes(&client, url_votes, name_votes).await?;
-        let vote_wgs84 = vote.convert_wgs84().unwrap();
+    let mut votes = Vec::new();
 
-        let _ = vote_wgs84
-            .write_geojson()
-            .context("Failed to write GeoJson.");
+    let geom_map = fetch_geom(&client).await?;
+    
+    for (url_votes, name_votes) in vote_sources {
+        let data_dir = "data";
+        let path = PathBuf::from(data_dir).join(name_votes);
+        if !path.exists() {
+            std::fs::create_dir_all(data_dir)?;
+            println!("Data harvest starts for {}", name_votes);
+            let vote = harvest_votes(&client, url_votes, name_votes, &geom_map).await?;
+            let vote_wgs84 = vote.convert_wgs84().unwrap();
+
+            let _ = vote_wgs84
+                .write_geojson()
+                .context("Failed to write GeoJson.");
+        }
+        println!("Read started.");
+        let vote = Vote::from_geojson(name_votes)?;
+        votes.push(vote);
     }
-    println!("Read started.");
-    let vote = Vote::from_geojson(name_votes)?;
+
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
 
-    Ok(vote)
+    Ok(votes)
 }
 
 pub fn read_file(file_path: &str) -> String {
