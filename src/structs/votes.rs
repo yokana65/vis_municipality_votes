@@ -98,7 +98,8 @@ impl Vote {
         let geojson_string = serde_json::to_string_pretty(&geojson)?;
 
         // Write to a file
-        let path = "./data/".to_string() + filename;
+        // let path = "./data/".to_string() + filename + ".json";
+        let path = format!("./data/{}.json", filename);
         let mut file = File::create(path)?;
         file.write_all(geojson_string.as_bytes())
             .expect("Failed to write GeoJson");
@@ -107,9 +108,8 @@ impl Vote {
     }
 
     pub fn from_geojson(filename: &str) -> Result<Self> {
-        // TODO: make this generally available
         let data_dir = "data";
-        let file_path = Path::new(data_dir).join(filename);
+        let file_path = Path::new(data_dir).join(format!("{}.json", &filename));
 
         let geojson_str = read_to_string(&file_path)
             .with_context(|| format!("Failed to read GeoJSON file: {}", file_path.display()))?;

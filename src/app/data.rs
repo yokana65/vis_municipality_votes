@@ -44,8 +44,9 @@ pub async fn get_data() -> Result<Vec<Vote>> {
     let geom_map = fetch_geom(&client).await?;
 
     for source in config.vote_sources {
+        dbg!(&source.name);
         let data_dir = "data";
-        let path = PathBuf::from(data_dir).join(&source.name);
+        let path = PathBuf::from(data_dir).join(format!("{}.json", &source.name));
         if !path.exists() {
             std::fs::create_dir_all(data_dir)?;
             println!("Data harvest starts for {}", &source.name);

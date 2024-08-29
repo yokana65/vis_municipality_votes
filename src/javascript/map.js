@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     console.log('Starting fetch request');
-    fetch('/assets/data/Leipzig.json')
+    fetch(`/data/${DATA_SOURCE}.json`)
     .then(response => {
       console.log('Received response:', response);
       if (!response.ok) {

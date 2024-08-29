@@ -11,15 +11,17 @@ pub fn views_factory(app: &mut ServiceConfig) {
 
 pub fn app_views_factory(app: &mut ServiceConfig) {
     app.route("/", web::get().to(data_items));
-    app.route("/v1/map", web::get().to(map));
+    app.route("/maps/2024_Stadtratswahl", web::get().to(|| map_view("Leipzig_Stadtratswahl_2024")));
+    app.route("/maps/2024_Europawahl", web::get().to(|| map_view("Leipzig_Europawahl_2024")));
 }
 
-pub async fn map() -> HttpResponse {
-    println!("Current dir: {:?}", std::env::current_dir().unwrap());
+pub async fn map_view(data_source: &str) -> HttpResponse {
+    println!("{}", data_source);
     let mut html_map = read_file("./templates/map.html");
     let javascript_data = read_file("./src/javascript/map.js");
 
-    html_map = html_map.replace("{{JAVASCRIPT}}", &javascript_data);
+    let script = format!("const DATA_SOURCE = '{}';", data_source);
+    html_map = html_map.replace("{{JAVASCRIPT}}", &(script + &javascript_data));
 
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")

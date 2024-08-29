@@ -21,6 +21,7 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .service(fs::Files::new("/assets", "./assets").show_files_listing())
+            .service(fs::Files::new("/data", "./data").show_files_listing())
             .configure(views_factory);
         return app;
     })
