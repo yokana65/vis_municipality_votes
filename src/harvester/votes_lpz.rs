@@ -8,7 +8,12 @@ use scraper::{Html, Selector};
 
 use crate::structs::votes::{Vote, VoteRecord};
 
-pub async fn harvest_votes(client: &Client, url: &str, name: &str, geom_map: &HashMap<String, Polygon>) -> Result<Vote> {
+pub async fn harvest_votes(
+    client: &Client,
+    url: &str,
+    name: &str,
+    geom_map: &HashMap<String, Polygon>,
+) -> Result<Vote> {
     let body = client.get(url).send().await?.text().await?;
 
     let document = Html::parse_document(&body);
