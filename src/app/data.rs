@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -7,6 +6,7 @@ use actix_web::HttpResponse;
 use anyhow::{Context, Result};
 use reqwest::Client;
 
+use crate::harvester::load_config;
 use crate::harvester::muni_geo::fetch_geom;
 use crate::harvester::votes_lpz::harvest_votes;
 use crate::structs::askama::render_html_summary;
@@ -33,29 +33,30 @@ pub async fn get_data() -> Result<Vec<Vote>> {
     let start = Instant::now();
     println!("Instant started.");
 
+    let config = load_config()?;
+
     let client = Client::builder()
         .timeout(Duration::from_secs(300))
         .build()?;
-
-    let mut vote_sources = HashMap::from([(
-            "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/stadtratswahlen/stadtratswahl-2024",
-            "Leipzig_Stadtratswahl_2024"
-        ),(
-            "https://www.leipzig.de/buergerservice-und-verwaltung/wahlen-in-leipzig/europawahlen/europawahl-2024",
-            "Leipzig_Europawahl_2024"
-        )]);
 
     let mut votes = Vec::new();
 
     let geom_map = fetch_geom(&client).await?;
 
-    for (url_votes, name_votes) in vote_sources {
+    for source in config.vote_sources {
         let data_dir = "data";
-        let path = PathBuf::from(data_dir).join(name_votes);
+        let path = PathBuf::from(data_dir).join(&source.name);
         if !path.exists() {
             std::fs::create_dir_all(data_dir)?;
-            println!("Data harvest starts for {}", name_votes);
-            let vote = harvest_votes(&client, url_votes, name_votes, &geom_map).await?;
+            println!("Data harvest starts for {}", &source.name);
+            let vote = harvest_votes(
+                &client,
+                &source.url,
+                &source.name,
+                &source.party_map,
+                &geom_map,
+            )
+            .await?;
             let vote_wgs84 = vote.convert_wgs84().unwrap();
 
             let _ = vote_wgs84
@@ -63,7 +64,7 @@ pub async fn get_data() -> Result<Vec<Vote>> {
                 .context("Failed to write GeoJson.");
         }
         println!("Read started.");
-        let vote = Vote::from_geojson(name_votes)?;
+        let vote = Vote::from_geojson(&source.name)?;
         votes.push(vote);
     }
 

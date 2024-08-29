@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use csv::ReaderBuilder;
 use geo::Polygon;
 use reqwest::Client;
@@ -12,6 +12,7 @@ pub async fn harvest_votes(
     client: &Client,
     url: &str,
     name: &str,
+    party_map: &HashMap<String, String>,
     geom_map: &HashMap<String, Polygon>,
 ) -> Result<Vote> {
     let body = client.get(url).send().await?.text().await?;
@@ -36,43 +37,20 @@ pub async fn harvest_votes(
 
     let mut vote_records: Vec<VoteRecord> = Vec::new();
 
-    // Parties in Leipzig are coded as follows:
-    // Die Linke: E1
-    // Grüne: E2
-    // CDU: E3
-    // AfD: E4
-    // SPD: E5
-    // FDP: E6
-    // Die PARTEI: E7
-    // BSW: E8
-    let party_positions = [17, 29, 41, 53, 65, 77, 89, 99];
-    let party_labels = [
-        "Die Linke",
-        "Grüne",
-        "CDU",
-        "AfD",
-        "SPD",
-        "FDP",
-        "Die Partei",
-        "BSW",
-    ];
-
     let headers = reader.headers()?.clone();
-
-    if headers[17] != *"E1" {
-        return Err(anyhow!("CSV does not follow the assumed order of parties."));
-    }
-
-    // let geom_map = fetch_geom(client).await?;
 
     for result in reader.records() {
         let record = result?;
-        let name_muni = record[4].to_string();
+        let muni_idx =
+            get_column_index(&headers, "gebiet-name").context("Failed to get column index")?;
+        let name_muni = record[muni_idx].to_string();
         let mut votes = HashMap::new();
 
-        for (&position, &label) in party_positions.iter().zip(party_labels.iter()) {
-            if let Ok(vote_count) = record[position].parse::<i32>() {
-                votes.insert(label.to_string(), vote_count);
+        for (position, party_name) in party_map {
+            let party_idx =
+                get_column_index(&headers, position).context("Failed to get column index")?;
+            if let Ok(vote_count) = record[party_idx].parse::<i32>() {
+                votes.insert(party_name.to_string(), vote_count);
             } else {
                 return Err(anyhow!(
                     "Failed tp parse votes for municipality {}",
@@ -90,6 +68,9 @@ pub async fn harvest_votes(
         name: name.to_string(),
         vote_records,
     };
-
     Ok(vote)
+}
+
+fn get_column_index(headers: &csv::StringRecord, column_name: &str) -> Option<usize> {
+    headers.iter().position(|h| h == column_name)
 }
