@@ -6,7 +6,7 @@ use askama::Template;
 use crate::structs::votes::Vote;
 
 #[derive(Template)]
-#[template(path = "main.html")]
+#[template(path = "descriptives.html")]
 pub struct VoteSummaryTemplate<'a> {
     vote_name: &'a str,
     vote_records: Vec<VoteRecordTemplate<'a>>,

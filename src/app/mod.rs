@@ -29,8 +29,8 @@ pub async fn map_view(data_source: &str) -> HttpResponse {
 
     let filename = format!("const DATA_SOURCE = '{}';", data_source);
     html_map = html_map
-    .replace("{{JAVASCRIPT}}", &(filename + &javascript_data))
-    .replace("{{DATA_TITLE}}", &data_source.replace("_", " "));
+        .replace("{{JAVASCRIPT}}", &(filename + &javascript_data))
+        .replace("{{DATA_TITLE}}", &data_source.replace("_", " "));
 
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
