@@ -1,35 +1,9 @@
-<!-- <!DOCTYPE html>
-<html lang = "de">
-    <head>
-        <meta name="description"
-         content="This is a visualizer for voting results"/>
-         <meta charset="UTF-8">
-         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-         <title>Vote results in Leipzig</title>
-    </head>
-    <body>
-        <h1>Wahlergebnisse Stadtratswahl 2024</h1>
-        <h2>{{ vote_name }}</h2>
-        {% for record in vote_records %}
-            <h3>Municipality: {{ record.name_muni }}</h3>
-            <p>Gesamtstimmen: {{ record.total_votes }}</p>
-            <ul>
-            {% for (party, percentage) in record.vote_perc %}
-                <li>{{ party }}: {{ percentage }} Percent</li>
-            {% endfor %}
-            </ul>
-            {% if record.has_geometry %}
-                <p>Contains a geometry</p>
-            {% endif %}
-        {% endfor %}
-    </body>
-</html> -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wahlergebnisse Visualisierung</title>
+    <title>Wahlergebnisse nach Leipziger Stadtteilen</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,7 +49,10 @@
         <a href="/summary" class="button">Statistiken anzeigen</a>
         
         <h2>Über das Projekt</h2>
-        <p>Diese Anwendung visualisiert Wahlergebnisse für verschiedene Wahlen in Leipzig nach Stadtteilen. Wählen Sie eine der obigen Optionen, um detaillierte Karten oder Zusammenfassungen zu sehen.</p>
+        <p>Diese Anwendung visualisiert Wahlergebnisse für verschiedene Wahlen in Leipzig nach Stadtteilen. 
+            Wählen Sie eine der obigen Optionen, um detaillierte Karten oder Zusammenfassungen zu sehen. 
+            Die Ergebnisse der Wahlen können für jede Partei einzelnd abgebildet werden und ermöglichen so 
+            einen Vergleich der Stadtteile nach Parteienpräferenzen.</p>
 
         <h2>Quellen</h2>
         <p>Diese Anwendung visualisiert Wahlergebnisse für verschiedene Wahlen in Leipzig nach Stadtteilen. Wählen Sie eine der obigen Optionen, um detaillierte Karten oder Zusammenfassungen zu sehen.</p>

@@ -10,7 +10,8 @@ pub fn views_factory(app: &mut ServiceConfig) {
 }
 
 pub fn app_views_factory(app: &mut ServiceConfig) {
-    app.route("/", web::get().to(data_items));
+    app.route("/", web::get().to(main_page));
+    app.route("/Ergebnisse", web::get().to(data_items));
     app.route(
         "/maps/2024_Stadtratswahl",
         web::get().to(|| map_view("Leipzig_Stadtratswahl_2024")),
@@ -27,19 +28,18 @@ pub async fn map_view(data_source: &str) -> HttpResponse {
     let javascript_data = read_file("./src/javascript/map.js");
 
     let filename = format!("const DATA_SOURCE = '{}';", data_source);
-    // let script_variables = format!(
-    //     "const DATA_SOURCE = '{}'; const DATA_TITLE = '{}';",
-    //     data_source,
-    //     data_source.replace("_", " ")
-    // );
-    // html_map = html_map.replace("{{JAVASCRIPT}}", &(filename + &javascript_data));
-    // html_map = html_map.replace("{{TITLE}}", &(&data_source.replace("_", " ")));
     html_map = html_map
     .replace("{{JAVASCRIPT}}", &(filename + &javascript_data))
     .replace("{{DATA_TITLE}}", &data_source.replace("_", " "));
-    // println!("{}", html_map);
 
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(html_map)
+}
+
+async fn main_page() -> HttpResponse {
+    let html_main = read_file("./templates/main.html");
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(html_main)
 }
