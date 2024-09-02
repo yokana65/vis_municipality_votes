@@ -25,3 +25,17 @@ D5 = "SPD"
 D6 = "FDP"
 D8 =  "Die Partei"
 D28 = "BSW"
+
+[[vote_sources]]
+url = "https://wahlergebnis.leipzig.de/4/lt2024/14713000/praesentation/opendata.html"
+name = "Leipzig_Landtagswahl_2024"
+
+[vote_sources.party_map]
+D1 = "CDU"
+D2 = "AfD"
+D3 = "Die Linke"
+D4 = "Grüne"
+D5 = "SPD"
+D6 = "FDP"
+D8 =  "Die Partei"
+D16 = "BSW"
