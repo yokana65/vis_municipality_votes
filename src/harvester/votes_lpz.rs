@@ -12,6 +12,7 @@ pub async fn harvest_votes(
     client: &Client,
     url: &str,
     name: &str,
+    csv_url: &Option<String>,
     party_map: &HashMap<String, String>,
     geom_map: &HashMap<String, Polygon>,
 ) -> Result<Vote> {
@@ -21,13 +22,19 @@ pub async fn harvest_votes(
     let selector = Selector::parse("a[href$='.csv'][href*='Ortsteil']")
         .expect("Failed to parse CSS selector for CSV link");
 
-    let link = document
-        .select(&selector)
-        .next()
-        .expect("No CSV Link found on page");
-    println!("Scraping data from: {:?}", link.value().attr("href"));
-    let csv_url = link.value().attr("href").unwrap();
-    let csv_response = client.get(csv_url).send().await?;
+    let csv_url_scrp = match document.select(&selector).next() {
+        Some(link) => link.value().attr("href").map(|s| s.to_string()),
+        None => None,
+    };
+
+    match csv_url_scrp {
+        Some(ref url) => println!("Scraping data from: {}", url),
+        None => println!("Using default CSV URL: {:?}", csv_url),
+    }
+
+    let csv_url_scrp =
+        csv_url_scrp.unwrap_or_else(|| csv_url.clone().expect("No url in source provided."));
+    let csv_response = client.get(csv_url_scrp).send().await?;
     let csv_content = csv_response.text().await?;
 
     let mut reader = ReaderBuilder::new()

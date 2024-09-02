@@ -54,6 +54,7 @@ pub async fn get_data() -> Result<Vec<Vote>> {
                 &client,
                 &source.url,
                 &source.name,
+                &source.csv_url,
                 &source.party_map,
                 &geom_map,
             )

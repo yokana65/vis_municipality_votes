@@ -29,6 +29,8 @@ D28 = "BSW"
 [[vote_sources]]
 url = "https://wahlergebnis.leipzig.de/4/lt2024/14713000/praesentation/opendata.html"
 name = "Leipzig_Landtagswahl_2024"
+csv_url = "https://wahlergebnis.leipzig.de/4/lt2024/14713000/daten/opendata/Open-Data-14713000-Wahl-des-Saechsischen-Landtages-Ortsteil.csv"
+
 
 [vote_sources.party_map]
 D1 = "CDU"
@@ -37,5 +39,4 @@ D3 = "Die Linke"
 D4 = "Grüne"
 D5 = "SPD"
 D6 = "FDP"
-D8 =  "Die Partei"
 D16 = "BSW"

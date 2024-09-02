@@ -16,6 +16,7 @@ pub struct Config {
 pub struct VoteSource {
     pub url: String,
     pub name: String,
+    pub csv_url: Option<String>,
     pub party_map: HashMap<String, String>,
 }
 
